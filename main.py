@@ -35,13 +35,13 @@ students = {
     2: {
         "name": "carl",
         "age": 16,
-        "course": "standard"}
+        "course": "basic"}
 }
 
 
 @app.get("/")
 async def root():
-    return {"name": "What your name ?"}
+    return {"message": "What your name ?"}
 
 
 @app.get("/students/")
@@ -75,7 +75,7 @@ def get_student(name: Optional[str] = None):
     return {"Data": "Not found"}
 
 
-@app.post("/create_student/{student_id}")
+@app.post("/students/{student_id}")
 # `student`は変数で、`Student`はPydanticモデル
 # Pydanticモデルは、リクエストボディのバリデーションとデータの変換を行う
 def create_student(student_id: int, student: Student):
@@ -85,18 +85,13 @@ def create_student(student_id: int, student: Student):
     return students[student_id]
 
 
-@app.put("/update_student/{student_id}")
+@app.put("/students/{student_id}")
 def update_student(student_id: int, student: UpdateStudent):
     if student_id not in students:
         return {"Error": "Student does not exist"}
 
-    # Pydanticモデルの`model_dump`メソッドは、モデルの属性を辞書として返すので
-    # keyとvalueに分割代入して、`setattr`関数を使用して、studentモデルの属性を更新する
-    for key, value in student.model_dump().items():
-        if value is not None:
-            # setattr(object, name, value)は、objectの属性nameの値をvalueに設定する
-            # Pythonの組み込み関数で、`object.name = value`と同じ
-            setattr(students[student_id], key, value)
+    update_data = student.model_dump(exclude_unset=True)
+    students[student_id].update(update_data)
 
     # if student.name is not None:
     #     students[student_id].name = student.name
