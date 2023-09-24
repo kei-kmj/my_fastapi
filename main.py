@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Path
+from fastapi import FastAPI, Path, HTTPException
 # Pydanticは、データのバリデーションを行うためのライブラリ
 # Pythonの型ヒントを使ってデータモデルを定義し、これをもとにデータのバリデーションを行う
 from pydantic import BaseModel
@@ -56,7 +56,10 @@ def get_students():
 # descriptionは、パスパラメーターの説明を記述する
 # gt(greater than)とlt(less than)は、パスパラメーターの値の範囲を指定する
 # この場合、student_idは1より大きく、3より小さい値である必要がある
-def get_student(student_id: int = Path(..., description="The ID of the student you want to view", gt=0, lt=3)):
+def get_student(student_id: int = Path(..., description="The ID of the student you want to view", gt=0, lt=10)):
+    if student_id not in students:
+        raise HTTPException(status_code=404, detail="Data not found")
+
     return students[student_id]
 
 
@@ -72,7 +75,7 @@ def get_student(name: Optional[str] = None):
     for student_id in students:
         if students[student_id]["name"] == name:
             return students[student_id]
-    return {"Data": "Not found"}
+    return {"Data": "Data not found"}
 
 
 @app.post("/students/{student_id}")
@@ -88,7 +91,7 @@ def create_student(student_id: int, student: Student):
 @app.put("/students/{student_id}")
 def update_student(student_id: int, student: UpdateStudent):
     if student_id not in students:
-        return {"Error": "Student does not exist"}
+        raise HTTPException(status_code=404, detail="Data not found")
 
     update_data = student.model_dump(exclude_unset=True)
     students[student_id].update(update_data)
@@ -108,7 +111,7 @@ def update_student(student_id: int, student: UpdateStudent):
 @app.delete("/delete_student/{student_id}")
 def delete_student(student_id: int):
     if student_id not in students:
-        return {"Error": "Student does not exist"}
+        raise HTTPException(status_code=404, detail="Data not found")
     # delは参照の作をを行う
     # その後、非同期でガベージコレクションが実行され、物理的な削除（メモリの解放）が行われる
     del students[student_id]
